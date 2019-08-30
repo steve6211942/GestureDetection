@@ -23,7 +23,7 @@ def segment(image, threshold=25):
 	# get the contours in the thresholded image
 	kernel = np.ones((3,3),np.uint8)
 	thresholded = cv2.dilate(thresholded,kernel,iterations = 4)
-	
+	thresholded = cv2.GaussianBlur(thresholded,(5,5),100)
 	cnts,_ = cv2.findContours(thresholded.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 	# return None, if no contours detected
 	if len(cnts) == 0:
@@ -157,4 +157,5 @@ if __name__ == "__main__":
 			break
 		cv2.imshow('camera', image_np)
 		cv2.imshow('crop', crop_img)
+
 

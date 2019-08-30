@@ -29,6 +29,16 @@ try:
 				ser.write(b'E message\n')
 				prev = 'e'
 			count = 0
+		elif key == ord('a'):
+			if prev != 'a' or non_status == 1:
+				ser.write(b'A message\n')
+				prev = 'a'
+			count = 0
+		elif key == ord('d'):
+			if prev != 'd' or non_status == 1:
+				ser.write(b'D message\n')
+				prev = 'd'
+			count = 0
 		else:
 			count += 1;
 			if count == 2:

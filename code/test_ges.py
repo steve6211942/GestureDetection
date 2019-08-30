@@ -13,7 +13,11 @@ if __name__ == "__main__":
 	max_x = 100
 	max_y = 100
 	status = 0
+	ok_num = 0
+	frame_num = 0
+	
 	while True:
+		ok_flag = False
 		ret, frame = cap.read()
 		
 		# mirror the camera
@@ -53,12 +57,12 @@ if __name__ == "__main__":
 				if max_x-min_x >= 100:
 					min_x += 15
 					min_y += 15
-					max_x += 15
-					max_y += 15
+					max_x -= 15
+					max_y -= 15
 			elif key == 32:
 				status += 1
 
-		elif status == 1:
+		elif status == 1 or status == 2 or status == 3:
 			cv2.imshow("roi", roi)
 
 			# control the camera base on gesture
@@ -124,35 +128,28 @@ if __name__ == "__main__":
 				cY = int((extreme_left[1] + extreme_right[1]) / 2)
 				a = '2'
 			cv2.circle(roi, (cX,cY), 3, [0,0,255], -1)			
-			print(a)
-			print(int(extreme_left[1]))
-			print(int(extreme_right[1]))
 			# Cutting the contour by cX and cY and find two smaller area
+			mode = 'none'
 			if arearatio > 12:
-				roi1 = roi[0:cY, 0:cX]
-				roi2 = roi[cY:max_y-min_y, 0:cX]
-				roi3 = roi[0:cY, cX:max_x-min_x]
-				roi4 = roi[cY:max_y-min_y, cX:max_x-min_x]
+				if a == '1':
+					# case up and down, only cut cY
+					roi1 = roi[0:cY, 0: max_x-min_x]
+					roi2 = roi[cY:max_y-min_y, 0:max_x-min_x]
+				elif a == '2':
+					# case left and right, only cut cX
+					roi1 = roi[0:max_y-min_y, 0:cX]
+					roi2 = roi[0:max_y-min_y, cX:max_x-min_x]
+
 				hsv1 = cv2.cvtColor(roi1, cv2.COLOR_BGR2HSV)
 				hsv2 = cv2.cvtColor(roi2, cv2.COLOR_BGR2HSV)
-				hsv3 = cv2.cvtColor(roi3, cv2.COLOR_BGR2HSV)
-				hsv4 = cv2.cvtColor(roi4, cv2.COLOR_BGR2HSV)
 				mask1 = cv2.inRange(hsv1, lower_skin, upper_skin)
 				mask2 = cv2.inRange(hsv2, lower_skin, upper_skin)
-				mask3 = cv2.inRange(hsv3, lower_skin, upper_skin)
-				mask4 = cv2.inRange(hsv4, lower_skin, upper_skin)
 				mask1 = cv2.dilate(mask1,kernel,iterations = 4)
 				mask2 = cv2.dilate(mask2,kernel,iterations = 4)
-				mask3 = cv2.dilate(mask3,kernel,iterations = 4)
-				mask4 = cv2.dilate(mask4,kernel,iterations = 4)
 				mask1 = cv2.GaussianBlur(mask1,(5,5),100)
 				mask2 = cv2.GaussianBlur(mask2,(5,5),100)
-				mask3 = cv2.GaussianBlur(mask3,(5,5),100)
-				mask4 = cv2.GaussianBlur(mask4,(5,5),100)
 				contours1,hierarchy= cv2.findContours(mask1,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
 				contours2,hierarchy= cv2.findContours(mask2,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
-				contours3,hierarchy= cv2.findContours(mask3,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
-				contours4,hierarchy= cv2.findContours(mask4,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
 				if len(contours1) != 0:
 					cnt1 = max(contours1, key = lambda x: cv2.contourArea(x))
 					areacnt1 = cv2.contourArea(cnt1)
@@ -163,36 +160,22 @@ if __name__ == "__main__":
 					areacnt2 = cv2.contourArea(cnt2)
 				else:
 					areacnt2 = 0
-				if len(contours3) != 0:
-					cnt3 = max(contours3, key = lambda x: cv2.contourArea(x))
-					areacnt3 = cv2.contourArea(cnt3)
-				else:
-					areacnt3 = 0
-				if len(contours4) != 0:
-					cnt4 = max(contours4, key = lambda x: cv2.contourArea(x))
-					areacnt4 = cv2.contourArea(cnt4)
-				else:
-					areacnt4 = 0
 				
-				mode = 'none'
-				if areacnt1 > areacnt4 and areacnt3 > areacnt2:
+				#mode = 'none'
+				if areacnt1 > areacnt2 and a == '1':
 					mode = 'down'
-				elif areacnt1 > areacnt4 and areacnt2 > areacnt3:
-					mode = 'right'
-				elif areacnt4 > areacnt1 and areacnt2 > areacnt3:
+				elif areacnt2 > areacnt1 and a == '1':
 					mode = 'up'
-				elif areacnt4 > areacnt1 and areacnt3 > areacnt2:
+				elif areacnt1 > areacnt2 and a == '2':
+					mode = 'right'
+				elif areacnt2 > areacnt1 and a == '2':
 					mode = 'left'
 				else:
 					mode = 'none'
-					cv2.imshow('mask1',mask1)
-					cv2.imshow('roi1',roi1)
-					cv2.imshow('mask2', mask2)
-					cv2.imshow('roi2',roi2)
-					cv2.imshow('mask3',mask3)
-					cv2.imshow('roi3',roi3)
-					cv2.imshow('mask4',mask4)
-					cv2.imshow('roi4',roi4)
+				cv2.imshow('mask1',mask1)
+				cv2.imshow('roi1',roi1)
+				cv2.imshow('mask2', mask2)
+				cv2.imshow('roi2',roi2)
 
 			#find the defects in convex hull with respect to hand
 			hull = cv2.convexHull(approx, returnPoints=False)
@@ -238,17 +221,39 @@ if __name__ == "__main__":
 				if areacnt < 2000:
 					cv2.putText(frame,'Put hand in the box',(0,50), font, 2, (0,0,255), 3, cv2.LINE_AA)
 				else:
-					if arearatio < 12:
-						cv2.putText(frame,'0',(0,50), font, 2, (0,0,255), 3, cv2.LINE_AA)
-					else:
-						cv2.putText(frame,mode,(0,50), font, 2, (0,0,255), 3, cv2.LINE_AA)
+					if arearatio < 12 and status == 3:
+						cv2.putText(frame,'O',(0,50), font, 2, (0,0,255), 3, cv2.LINE_AA)
+						status = 0
+					elif status == 1 or status == 3:
+						if status == 1:
+							cv2.putText(frame,mode,(0,50), font, 2, (0,0,255), 3, cv2.LINE_AA)
+							print(mode)
+						else:
+							if mode == 'up':
+								cv2.putText(frame,'1',(0,50), font, 2, (0,0,255), 3, cv2.LINE_AA)
+								status = 2
 			elif l == 3:
 				cv2.putText(frame,'ok',(0,50), font, 2, (0,0,255), 3, cv2.LINE_AA)
+				ok_flag = True
+				ok_num += 1
+				frame_num = 0
+				print("ok")
+				if ok_num == 30:
+					status += 1
 			else :
 				cv2.putText(frame,'reposition',(10,50), font, 2, (0,0,255), 3, cv2.LINE_AA)
 			#show the windows
 			cv2.imshow('mask',mask)
-		cv2.imshow('frame',frame) 
+			if ok_flag == False:
+				frame_num += 1
+				if frame_num == 5:
+					ok_num = 0
+		elif status == 4:
+			cap.release()
+			cv2.destroyAllWindows()
+			break
+		cv2.imshow('frame',frame)
+		print(status)	
 		if key == 27:
 			cap.release()
 			cv2.destroyAllWindows()
