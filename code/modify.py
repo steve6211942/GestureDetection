@@ -68,7 +68,9 @@ if __name__ == "__main__":
 	frame_num = 0
 	num_frames = 0
 	aWeight = 0.5
-
+	font = cv2.FONT_HERSHEY_SIMPLEX
+	leave_times = 1
+	leave_num = 3
 	while True:
 		ok_flag = False
 		ret, frame = cap.read()
@@ -82,7 +84,14 @@ if __name__ == "__main__":
 		# define the range you interest
 		roi = frame[min_y:max_y, min_x:max_x]
 		key = cv2.waitKey(25) & 0xFF
+		
+		text = np.zeros((400,800,3), np.uint8)
+		text.fill(255)
+		
 		if status == 0:
+			cv2.putText(text,'Press WASD to move the square',(10,50), font, 1, (0,0,255), 2, cv2.LINE_AA)
+			cv2.putText(text,'Press QE to change square size',(10,100), font, 1, (0,0,255), 2, cv2.LINE_AA)
+			cv2.putText(text,'Press SPACE to check the position of the square',(10,150), font, 1, (0,0,255), 2, cv2.LINE_AA)
 			# select range mode
 			if key == ord('w'):
 				if min_y >= 15:
@@ -121,10 +130,19 @@ if __name__ == "__main__":
 			gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
 			gray = cv2.GaussianBlur(gray, (7,7), 0)
 			if num_frames < 100:
-				run_avg(gray, aWeight)
-				num_frames += 1
-				print(num_frames)
+				if leave_times < 90:
+					if leave_times % 30 == 0:
+						leave_num -= 1
+					leave_times += 1
+					cv2.putText(text,'Leave the square',(10,50), font, 1, (0,0,255), 2, cv2.LINE_AA)
+					cv2.putText(text,str(leave_num),(10,100), font, 1, (0,0,255), 2, cv2.LINE_AA)
+				else:
+					run_avg(gray, aWeight)
+					num_frames += 1
+					cv2.putText(text,'Waiting for running average of background',(10,50), font, 1, (0,0,255), 2, cv2.LINE_AA)
+					cv2.putText(text,str(num_frames) + "%",(10,100), font, 1, (0,0,255), 2, cv2.LINE_AA)
 			else:
+				cv2.putText(text,'Use your gesture to control the position of camera',(10,50), font, 1, (0,0,255), 2, cv2.LINE_AA)
 				hand = segment(gray)
 				if hand is not None:
 					(mask, cnt) = hand
@@ -221,7 +239,6 @@ if __name__ == "__main__":
 						l += 1
 			
 						#print corresponding gestures which are in their ranges
-						font = cv2.FONT_HERSHEY_SIMPLEX
 						if l == 1:
 							if areacnt < 2000:
 								cv2.putText(frame,'Put hand in the box',(0,50), font, 2, (0,0,255), 3, cv2.LINE_AA)
@@ -259,6 +276,7 @@ if __name__ == "__main__":
 			cv2.destroyAllWindows()
 			break
 		cv2.imshow('frame',frame)
+		cv2.imshow("text", text)
 		print(status)	
 		if key == 27:
 			cap.release()
