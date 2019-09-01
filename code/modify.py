@@ -201,6 +201,10 @@ if __name__ == "__main__":
 	status = 0
 	ok_num = 0
 	frame_num = 0
+	one_num = 0
+	one_frame = 0
+	o_num = 0
+	o_frame = 0
 	num_frames = 0
 	aWeight = 0.5
 	font = cv2.FONT_HERSHEY_SIMPLEX
@@ -209,6 +213,8 @@ if __name__ == "__main__":
 	square_flag = 0
 	while True:
 		ok_flag = False
+		one_flag = False
+		o_flag = False
 		ret, frame = cap.read()
 		
 		# mirror the camera
@@ -355,7 +361,18 @@ if __name__ == "__main__":
 							if arearatio < 12:
 								if status == 3:
 									cv2.putText(frame,'O',(0,50), font, 2, (0,0,255), 3, cv2.LINE_AA)
-									status = 0
+									o_flag = True
+									o_num += 1
+									o_frame = 0
+									if o_num == 30:
+										status = 0
+										num_frames = 0
+										bg1 = None
+										bg2 = None
+										leave_times = 1
+										leave_num = 3
+										square_flag = 0
+										o_num = 0
 							elif status == 1 or status == 3:
 								if status == 1:
 									if mode != 'down':
@@ -363,7 +380,12 @@ if __name__ == "__main__":
 								else:
 									if mode == 'up':
 										cv2.putText(frame,'1',(0,50), font, 2, (0,0,255), 3, cv2.LINE_AA)
-										status = 2
+										one_flag = True
+										one_num += 1
+										one_frame = 0
+										if one_num == 30:
+											status = 2
+											one_num = 0
 					elif l == 3:
 						cv2.putText(frame,'ok',(0,50), font, 2, (0,0,255), 3, cv2.LINE_AA)
 						ok_flag = True
@@ -374,6 +396,18 @@ if __name__ == "__main__":
 							ok_num = 0
 					else:
 						cv2.putText(frame,'reposition',(10,50), font, 2, (0,0,255), 3, cv2.LINE_AA)
+					if ok_flag == False and ok_num != 0:
+						frame_num += 1
+						if frame_num == 5:
+							ok_num = 0
+					if o_flag == False and o_num != 0:
+						o_frame += 1
+						if o_frame == 5:
+							o_num = 0
+					if one_flag == False and one_num != 0:
+						one_frame += 1
+						if one_frame == 5:
+							one_num = 0
 				'''if l == 1:
 					if areacnt < 2000:
 						cv2.putText(frame,'Put hand in the box',(0,50), font, 2, (0,0,255), 3, cv2.LINE_AA)
