@@ -3,7 +3,7 @@ import numpy as np
 import math
 
 if __name__ == "__main__":
-	cap = cv2.VideoCapture(0)
+	cap = cv2.VideoCapture(1)
 	width = cap.get(3)
 	height = cap.get(4)
 	width -= 15
